@@ -1,0 +1,29 @@
+name: CD Pipeline
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  deploy:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: pull changes to vds
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VDS_HOST }}
+        username: ${{ secrets.VDS_USER }}
+        password: ${{ secrets.VDS_PASSWD }}
+        port: ${{ secrets.VDS_PORT }}
+        key: ${{ secrets.VDS_SSHKEY }}
+        script: |
+          cd ~/embio-tg-main
+          systemctl stop embio.service
+          python -m pip install -r requirements.txt
+          git pull
+          systemctl start embio.service
